@@ -1,0 +1,73 @@
+item {
+  id: 1
+  name: "person"
+  display_name: "Person"
+  keypoints {
+    id: 0
+    label: "nose"
+  }
+  keypoints {
+    id: 1
+    label: "left_eye"
+  }
+  keypoints {
+    id: 2
+    label: "right_eye"
+  }
+  keypoints {
+    id: 3
+    label: "left_ear"
+  }
+  keypoints {
+    id: 4
+    label: "right_ear"
+  }
+  keypoints {
+    id: 5
+    label: "left_shoulder"
+  }
+  keypoints {
+    id: 6
+    label: "right_shoulder"
+  }
+  keypoints {
+    id: 7
+    label: "left_elbow"
+  }
+  keypoints {
+    id: 8
+    label: "right_elbow"
+  }
+  keypoints {
+    id: 9
+    label: "left_wrist"
+  }
+  keypoints {
+    id: 10
+    label: "right_wrist"
+  }
+  keypoints {
+    id: 11
+    label: "left_hip"
+  }
+  keypoints {
+    id: 12
+    label: "right_hip"
+  }
+  keypoints {
+    id: 13
+    label: "left_knee"
+  }
+ keypoints {
+    id: 14
+    label: "right_knee"
+  }
+  keypoints {
+    id: 15
+    label: "left_ankle"
+  }
+  keypoints {
+    id: 16
+    label: "right_ankle"
+  }
+}
