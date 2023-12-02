@@ -24,6 +24,7 @@ class ImageInference:
     def __init__(self):
 
         image_path = "/Users/dharrensandhi/fiftyone/coco-2017/validation/data/000000041990.jpg"
+        video_path = "/Users/dharrensandhi/Downloads/000017.mp4"
         self.STANDARD_COLORS = [
             'AliceBlue', 'Chartreuse', 'Aqua', 'Aquamarine', 'Azure', 'Beige', 'Bisque',
             'BlanchedAlmond', 'BlueViolet', 'BurlyWood', 'CadetBlue', 'AntiqueWhite',
@@ -57,17 +58,20 @@ class ImageInference:
         self.image = self.image_selection(image_path)
         self.result = self.inference()
         # self.visualisation_image()
-        self.visualisation_video()
+        # self.visualisation_video_live()
+        self.visualisation_video_offline(video_path)
 
     def load_model(self):
         # print('loading model...')
         # hub_model = hub.load(model_handle)
         # print('model loaded!')
-        configs = config_util.get_configs_from_pipeline_file(path2config)  # importing config
-        model_config = configs['model']  # recreating model config
-        detection_model = model_builder.build(model_config=model_config, is_training=False)  # importing model
-        ckpt = tf.compat.v2.train.Checkpoint(model=detection_model)
-        ckpt.restore(os.path.join(f'{path2model}/checkpoint', 'ckpt-0')).expect_partial()
+        # configs = config_util.get_configs_from_pipeline_file(path2config)  # importing config
+        # model_config = configs['model']  # recreating model config
+        # detection_model = model_builder.build(model_config=model_config, is_training=False)  # importing model
+        # ckpt = tf.compat.v2.train.Checkpoint(model=detection_model)
+        # ckpt.restore(os.path.join(f'{path2model}/checkpoint', 'ckpt-0')).expect_partial()
+
+        detection_model = tf.saved_model.load(f'/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/model_1_scripts/saved_model/saved_model')
 
         return detection_model
 
@@ -103,16 +107,14 @@ class ImageInference:
         if convert_image_to_grayscale:
             image_np[0] = np.tile(np.mean(image_np[0], 2, keepdims=True), (1, 1, 3)).astype(np.uint8)
 
-        # plt.figure(figsize=(24,32))
-        # plt.imshow(image_np[0])
-        # plt.show()
-
         return image_np
 
     def inference(self):
         # running inference
-        input_tensor = tf.convert_to_tensor(self.image, dtype=tf.float32)
-        results = self.detect_fn(input_tensor)
+        input_tensor = tf.convert_to_tensor(self.image, dtype=tf.uint8)
+        # results = self.detect_fn(input_tensor)
+        infer = self.model.signatures["serving_default"]
+        results = infer(input_tensor=input_tensor)
 
         # different object detection models have additional results
         # all of them are explained in the documentation
@@ -151,10 +153,10 @@ class ImageInference:
         plt.figure(figsize=(24, 32))
         plt.imshow(image_np_with_detections[0])
         # plt.show()
-        plt.savefig("/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/output_images/inference.png")
+        plt.savefig("/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/model_1_scripts/output_images/inference.png")
 
 
-    def visualisation_video(self):
+    def visualisation_video_live(self):
         cap = cv2.VideoCapture(0)
 
         while True:
@@ -200,14 +202,76 @@ class ImageInference:
         cap.release()
         cv2.destroyAllWindows()
 
+    def visualisation_video_offline(self, path):
+
+        vidObj = cv2.VideoCapture(path)
+
+        fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')  # video compression format
+        HEIGHT = int(vidObj.get(cv2.CAP_PROP_FRAME_HEIGHT))  # webcam video frame height
+        WIDTH = int(vidObj.get(cv2.CAP_PROP_FRAME_WIDTH))  # webcam video frame width
+        FPS = int(vidObj.get(cv2.CAP_PROP_FPS))  # webcam video frame rate
+
+        video_name = "/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/model_1_scripts/keypoint_video/keypoint_video_test.avi"
+        out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*"MJPG"), FPS, (WIDTH, HEIGHT))
+
+        count = 0
+
+        while True:
+            # Read frame from camera
+            success, image = vidObj.read()
+
+            resized_frame = cv2.resize(image, (512, 512))
+
+            input_tensor = tf.convert_to_tensor(np.expand_dims(resized_frame, 0), dtype=tf.uint8)
+            # results = self.detect_fn(input_tensor)
+            infer = self.model.signatures["serving_default"]
+            results = infer(input_tensor=input_tensor)
+
+            result = {key: value.numpy() for key, value in results.items()}
+
+            label_id_offset = 1
+            image_np_with_detections = image.copy()
+
+            # Use keypoints if available in detections
+            keypoints, keypoint_scores = None, None
+            if 'detection_keypoints' in result:
+                keypoints = result['detection_keypoints'][0]
+                keypoint_scores = result['detection_keypoint_scores'][0]
+
+            self.visualize_boxes_and_labels_on_image_array(
+                image_np_with_detections,
+                result['detection_boxes'][0],
+                (result['detection_classes'][0] + label_id_offset).astype(int),
+                result['detection_scores'][0],
+                category_index,
+                use_normalized_coordinates=True,
+                max_boxes_to_draw=200,
+                min_score_thresh=.30,
+                agnostic_mode=False,
+                keypoints=keypoints,
+                keypoint_scores=keypoint_scores,
+                keypoint_edges=COCO17_HUMAN_POSE_KEYPOINTS)
+
+            # Write to the video file
+            print(f"Frame {count} completed")
+            count += 1
+
+            if count == 50:
+                break
+
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                break
+
+        out.release()
+        cv2.destroyAllWindows()
+
+
     def visualize_boxes_and_labels_on_image_array(self,
             image,
             boxes,
             classes,
             scores,
             category_index,
-            instance_masks=None,
-            instance_boundaries=None,
             keypoints=None,
             keypoint_scores=None,
             keypoint_edges=None,
@@ -217,16 +281,12 @@ class ImageInference:
             min_score_thresh=.5,
             agnostic_mode=False,
             line_thickness=4,
-            mask_alpha=.4,
             groundtruth_box_visualization_color='black',
-            skip_boxes=False,
             skip_scores=False,
             skip_labels=False,
             skip_track_ids=False):
         box_to_display_str_map = collections.defaultdict(list)
         box_to_color_map = collections.defaultdict(str)
-        box_to_instance_masks_map = {}
-        box_to_instance_boundaries_map = {}
         box_to_keypoints_map = collections.defaultdict(list)
         box_to_keypoint_scores_map = collections.defaultdict(list)
         box_to_track_ids_map = {}
@@ -237,10 +297,6 @@ class ImageInference:
                 break
             if scores is None or scores[i] > min_score_thresh:
                 box = tuple(boxes[i].tolist())
-                if instance_masks is not None:
-                    box_to_instance_masks_map[box] = instance_masks[i]
-                if instance_boundaries is not None:
-                    box_to_instance_boundaries_map[box] = instance_boundaries[i]
                 if keypoints is not None:
                     box_to_keypoints_map[box].extend(keypoints[i])
                 if keypoint_scores is not None:
@@ -281,32 +337,7 @@ class ImageInference:
 
         # Draw all boxes onto image.
         for box, color in box_to_color_map.items():
-            ymin, xmin, ymax, xmax = box
             self.keypoint_coordinates[f'Box {self.box_num}'] = []
-            if instance_masks is not None:
-                self.draw_mask_on_image_array(
-                    image,
-                    box_to_instance_masks_map[box],
-                    color=color,
-                    alpha=mask_alpha
-                )
-            if instance_boundaries is not None:
-                self.draw_mask_on_image_array(
-                    image,
-                    box_to_instance_boundaries_map[box],
-                    color='red',
-                    alpha=1.0
-                )
-            self.draw_bounding_box_on_image_array(
-                image,
-                ymin,
-                xmin,
-                ymax,
-                xmax,
-                color=color,
-                thickness=0 if skip_boxes else line_thickness,
-                display_str_list=box_to_display_str_map[box],
-                use_normalized_coordinates=use_normalized_coordinates)
             if keypoints is not None:
                 keypoint_scores_for_box = None
                 if box_to_keypoint_scores_map:
@@ -353,92 +384,6 @@ class ImageInference:
         num_candidates = len(abs_distance)
         inds = [i for _, i in sorted(zip(abs_distance, range(num_candidates)))]
         return prime_candidates[inds[0]]
-
-    def draw_mask_on_image_array(self, image, mask, color='red', alpha=0.4):
-      """Draws mask on an image.
-
-      Args:
-        image: uint8 numpy array with shape (img_height, img_height, 3)
-        mask: a uint8 numpy array of shape (img_height, img_height) with
-          values between either 0 or 1.
-        color: color to draw the keypoints with. Default is red.
-        alpha: transparency value between 0 and 1. (default: 0.4)
-
-      Raises:
-        ValueError: On incorrect data type for image or masks.
-      """
-      if image.dtype != np.uint8:
-        raise ValueError('`image` not of type np.uint8')
-      if mask.dtype != np.uint8:
-        raise ValueError('`mask` not of type np.uint8')
-      if image.shape[:2] != mask.shape:
-        raise ValueError('The image has spatial dimensions %s but the mask has '
-                         'dimensions %s' % (image.shape[:2], mask.shape))
-      rgb = ImageColor.getrgb(color)
-      pil_image = Image.fromarray(image)
-
-      solid_color = np.expand_dims(
-          np.ones_like(mask), axis=2) * np.reshape(list(rgb), [1, 1, 3])
-      pil_solid_color = Image.fromarray(np.uint8(solid_color)).convert('RGBA')
-      pil_mask = Image.fromarray(np.uint8(255.0*alpha*(mask > 0))).convert('L')
-      pil_image = Image.composite(pil_solid_color, pil_image, pil_mask)
-      np.copyto(image, np.array(pil_image.convert('RGB')))
-
-    def draw_bounding_box_on_image_array(self, image, ymin, xmin, ymax, xmax,
-                                         color='red', thickness=4, display_str_list=(),
-                                         use_normalized_coordinates=True):
-        image_pil = Image.fromarray(np.uint8(image)).convert('RGB')
-        self.draw_bounding_box_on_image(image_pil, ymin, xmin, ymax, xmax, color,
-                                   thickness, display_str_list,
-                                   use_normalized_coordinates)
-        np.copyto(image, np.array(image_pil))
-
-    def draw_bounding_box_on_image(self, image, ymin, xmin, ymax, xmax,
-                                   color='red', thickness=4, display_str_list=(),
-                                   use_normalized_coordinates=True):
-        draw = ImageDraw.Draw(image)
-        im_width, im_height = image.size
-        if use_normalized_coordinates:
-            (left, right, top, bottom) = (xmin * im_width, xmax * im_width,
-                                          ymin * im_height, ymax * im_height)
-        else:
-            (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
-        if thickness > 0:
-            draw.line([(left, top), (left, bottom), (right, bottom), (right, top),
-                       (left, top)],
-                      width=thickness,
-                      fill=color)
-        try:
-            font = ImageFont.truetype('arial.ttf', 24)
-        except IOError:
-            font = ImageFont.load_default()
-
-        # If the total height of the display strings added to the top of the bounding
-        # box exceeds the top of the image, stack the strings below the bounding box
-        # instead of above.
-        display_str_heights = [font.getbbox(ds)[3] for ds in display_str_list]
-        # Each display_str has a top and bottom margin of 0.05x.
-        total_display_str_height = (1 + 2 * 0.05) * sum(display_str_heights)
-
-        if top > total_display_str_height:
-            text_bottom = top
-        else:
-            text_bottom = bottom + total_display_str_height
-        # Reverse list and print from bottom to top.
-        for display_str in display_str_list[::-1]:
-            bbox = font.getbbox(display_str)
-            text_width, text_height = bbox[2], bbox[3]
-            margin = np.ceil(0.05 * text_height)
-            draw.rectangle(
-                [(left, text_bottom - text_height - 2 * margin), (left + text_width,
-                                                                  text_bottom)],
-                fill=color)
-            draw.text(
-                (left + margin, text_bottom - text_height - margin),
-                display_str,
-                fill='black',
-                font=font)
-            text_bottom -= text_height - 2 * margin
 
     def draw_keypoints_on_image_array(self, image,
                                       keypoints,
