@@ -1,4 +1,5 @@
 # Ai FitFriend
+Ai FitFriend : Your AI Workout Companion GitHub Repositories of Bangkit Academy 2022 Capstone Project from team CH2-PS079.
 Personal Fitness Tracker with Movement Recognition Model 
 <p align="center">
   <a href="#">
@@ -25,3 +26,38 @@ The contributors of this product-based capstone project of Bangkit Academy are a
 | Alissa Salim                         | A102BSX2033 | Mobile Development  |
 | Teguh Tri Laksono                    | A491BSY2256 | Mobile Development  |
 
+## Resources
+Our project consist of 4 branches:
+
+## Resources
+
+- Prerequisites
+  - Android
+  - Internet connection
+  - GPS/Location
+    
+- Installation
+  - Download the APK
+  - Install the APK
+    
+- Register
+  - Open AI FitFriend application
+  - Signup with your google account
+    
+## Usage
+## Technology Used
+## API Documentation
+For API documentation, please refer to the following link
+
+## Help Us to Get Better!
+We welcome and appreciate contributions from the community to make AiFitFriend better! Whether you're reporting a bug, discussing code improvements, submitting a fix, suggesting new features, or considering becoming a maintainer – your input is invaluable to us.
+
+If you have suggestions, or questions, or just want to discuss the project, don't hesitate to reach out to this contact.
+
+Thank you for considering contributing to Ai FitFriend – together, we can make it even better!
+
+## License
+
+## Contact
+
+## Acknowledgement
