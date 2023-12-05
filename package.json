@@ -1,0 +1,20 @@
+{
+  "name": "api-fitfriend-app",
+  "version": "1.0.0",
+  "description": "api fitfriend application",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "yunus priatna",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "firebase-admin": "^11.11.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.2"
+  }
+}

@@ -1,27 +1,82 @@
-# Ai FitFriend
-Personal Fitness Tracker with Movement Recognition Model 
-<p align="center">
-  <a href="#">
-    <img src="Image/STORYAPP1.jpg" alt="Logo" style="width: 250px; height: auto;">
-  </a>
-</p>
+# API Documentation
 
+This repository contains a Node.js and Express API for managing user data. The API includes endpoints for retrieving user information and updating user data.
 
-# Project Description
-Maintaining a state of physical and health well-being is a challenging task, especially when exercises are performed at home without proper guidance. The absence of instructors and the lack of proper equipment can lead to incorrect execution of postures and exercises. As a way to resolve this problem, our team has come up with a solution to address improper posture during workouts. Users can select their preferred fitness program and engage in it as daily exercises. In the event that our model detects any incorrect posture, it will automatically pause the exercise and display a video demonstrating the correct form. Through consistent use of this application, users can efficiently achieve and maintain their personal fitness goals, even in the comfort of their homes!
+## Installation
 
-# Contributors
-The contributors of this product-based capstone project of Bangkit Academy are as follows 
+Follow these steps to set up and run the API:
 
-## Team ID : CH2-PS079
+1. Clone the repository to your local machine:
 
-| Name                                 | Student ID  | Path                |
-| ------------------------------------ | ----------- | ------------------- |
-| Nicky                                | M707BSY1873 | Machine Learning    |
-| Dharren Sandhi Goutama               | M707BSY1867 | Machine Learning    |
-| Gracia Aretha Christanty             | M707BSX1907 | Machine Learning    |
-| Yunus Priatna Arridhwan Budiansyah   | C288BSY3656 | Cloud Computing     |
-| Bramansyah Akbar                     | C288BSY4019 | Cloud Computing     |
-| Alissa Salim                         | A102BSX2033 | Mobile Development  |
-| Teguh Tri Laksono                    | A491BSY2256 | Mobile Development  |
+   ```bash
+   git clone https://github.com/yunusarridwan/fitfriend-api.git
+   ```
 
+2. Navigate to the project directory:
+
+   ```bash
+   cd fitfriend-api
+   ```
+
+3. Install the required dependencies:
+
+   ```bash
+   npm install
+   ```
+
+4. Create a `.env` file in the root directory and add the necessary environment variables:
+
+   ```
+   PORT=8080
+   MONGODB_URI=mongodb://fitfriend:fitfriend123@clusterproject-shard-00-00.rqlvg.mongodb.net:27017,clusterproject-shard-00-01.rqlvg.mongodb.net:27017,clusterproject-shard-00-02.rqlvg.mongodb.net:27017/fitfriend?replicaSet=atlas-t63wbg-shard-0&ssl=true&authSource=admin
+   ```
+
+5. Start the server:
+
+   ```bash
+   npm start
+   ```
+
+   The API will be accessible at `https://fitfriend-api-lgc5c6xm5a-as.a.run.app:8080`.
+
+## Endpoints
+
+### 1. Get User Data
+
+- **Endpoint:** `PUT /user`
+- **Middleware:** `getResponseAuth`, `saveDataUser`
+- **Description:** Retrieves data for the authenticated user.
+- **Request Body:** None
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "uid": "user_uid",
+      "userEmail": "user@example.com",
+      "userName": "John Doe"
+    }
+  }
+  ```
+
+### 2. Update User Data
+
+- **Endpoint:** `PUT /user/updateUser`
+- **Middleware:** `getResponseAuth`
+- **Description:** Updates user data based on the provided parameters.
+- **Request Body:**
+  ```json
+  {
+    "uid": "user_uid",
+    "email": "new_email@example.com",
+    "name": "New Name",
+    "data": {
+      "gender": "Male",
+      "height": 180,
+      "weight": 75
+    }
+  }
+  ```
+- **Response:** `Data user_uid changed`
+
+Feel free to contribute to this project by opening issues or submitting pull requests. Happy coding!
