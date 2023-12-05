@@ -1,0 +1,3 @@
+[submodule "fitfriend-api"]
+	path = fitfriend-api
+	url = https://github.com/yunusarridwan/fitfriend-api.git
