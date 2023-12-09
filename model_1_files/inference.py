@@ -1,4 +1,3 @@
-import tensorflow_hub as hub
 import numpy as np
 import os
 
@@ -8,6 +7,7 @@ import matplotlib
 # matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from tensorflow.keras.models import load_model
 
 import collections
 import six
@@ -25,6 +25,8 @@ class ImageInference:
 
         image_path = "/Users/dharrensandhi/fiftyone/coco-2017/validation/data/000000041990.jpg"
         video_path = "/Users/dharrensandhi/Downloads/000017.mp4"
+        action_model_path = "/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/AiFitFriend/model_2_files/lstm_attention_128HUs_dharren_2d_0.0001reg_100epoch_70-30-30_16batch_17kp_nopress.h5"
+
         self.STANDARD_COLORS = [
             'AliceBlue', 'Chartreuse', 'Aqua', 'Aquamarine', 'Azure', 'Beige', 'Bisque',
             'BlanchedAlmond', 'BlueViolet', 'BurlyWood', 'CadetBlue', 'AntiqueWhite',
@@ -53,28 +55,54 @@ class ImageInference:
         self.box_num = 1
         self.num_detections = 0
 
+        self.sequence_length = 30
+        self.predictions = []
+        self.actions = ['curl', 'squat']  # Replace with your action names
+
         self.keypoint_coordinates = {}
-        self.model = self.load_model()
-        self.image = self.image_selection(image_path)
-        self.result = self.inference()
-        # self.visualisation_image()
+        self.keypoint_coordinates_per_frame = []
+
+        self.keypoint_model = self.load_keypoint_model(mode="build_from_config")
+        self.action_model = self.load_action_recognition_model(action_model_path)
+
+        self.image = None
+        # self.image = self.image_selection(image_path)
+        # self.result = self.inference()
+        # self.visualisation_image(image_path=image_path)
         # self.visualisation_video_live()
         self.visualisation_video_offline(video_path)
 
-    def load_model(self):
-        # print('loading model...')
+    def load_keypoint_model(self, mode):
+        print('Model Loading')
         # hub_model = hub.load(model_handle)
         # print('model loaded!')
-        # configs = config_util.get_configs_from_pipeline_file(path2config)  # importing config
-        # model_config = configs['model']  # recreating model config
-        # detection_model = model_builder.build(model_config=model_config, is_training=False)  # importing model
-        # ckpt = tf.compat.v2.train.Checkpoint(model=detection_model)
-        # ckpt.restore(os.path.join(f'{path2model}/checkpoint', 'ckpt-0')).expect_partial()
 
-        detection_model = tf.saved_model.load(f'/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/model_1_scripts/saved_model/saved_model')
+        ## built from config
+        if mode == "build_from_config":
+            configs = config_util.get_configs_from_pipeline_file(path2config)  # importing config
+            model_config = configs['model']  # recreating model config
+            detection_model = model_builder.build(model_config=model_config, is_training=False)  # importing model
+            ckpt = tf.compat.v2.train.Checkpoint(model=detection_model)
+            ckpt.restore(os.path.join(f'{path2model}/checkpoint', 'ckpt-0')).expect_partial()
+
+        ## load model directly from pb file
+        elif mode == "load_from_pb":
+            detection_model = tf.saved_model.load(f'/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/model_1_scripts/saved_model/saved_model')
+
+        ## load model from tflite
+        elif mode == "load_from_tflite":
+            detection_model = tf.lite.Interpreter(model_path="/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/model_1_scripts/tflite_model/saved_model.tflite")
+            detection_model.allocate_tensors()
+
+        print("Model Loaded")
 
         return detection_model
 
+    def load_action_recognition_model(self, model_path):
+
+        action_model = load_model(model_path)
+
+        return action_model
     def detect_fn(self, image):
         """
         Detect objects in image.
@@ -86,9 +114,9 @@ class ImageInference:
           detections (dict): predictions that model made
         """
 
-        image, shapes = self.model.preprocess(image)
-        prediction_dict = self.model.predict(image, shapes)
-        detections = self.model.postprocess(prediction_dict, shapes)
+        image, shapes = self.keypoint_model.preprocess(image)
+        prediction_dict = self.keypoint_model.predict(image, shapes)
+        detections = self.keypoint_model.postprocess(prediction_dict, shapes)
 
         return detections
 
@@ -109,23 +137,42 @@ class ImageInference:
 
         return image_np
 
-    def inference(self):
-        # running inference
-        input_tensor = tf.convert_to_tensor(self.image, dtype=tf.uint8)
-        # results = self.detect_fn(input_tensor)
-        infer = self.model.signatures["serving_default"]
-        results = infer(input_tensor=input_tensor)
+    def keypoint_inference(self, mode):
+        ## running inference from building saved model from config
+        if mode == "build_from_config":
+            input_tensor = tf.convert_to_tensor(self.image, dtype=tf.float32)
+            results = self.detect_fn(input_tensor)
+            result = {key: value.numpy() for key, value in results.items()}
 
-        # different object detection models have additional results
-        # all of them are explained in the documentation
-        result = {key: value.numpy() for key, value in results.items()}
+        ## running inference from pb file directly
+        elif mode == "load_from_pb":
+            input_tensor = tf.convert_to_tensor(self.image, dtype=tf.uint8)
+            infer = self.keypoint_model.signatures["serving_default"]
+            results = infer(input_tensor=input_tensor)
+            result = {key: value.numpy() for key, value in results.items()}
 
-        print(result.keys())
+        ## running inference from tflite model
+        elif mode == "load_from_tflite":
+            input_details = self.keypoint_model.get_input_details()
+
+            input_tensor = tf.convert_to_tensor(self.image, dtype=tf.uint8)
+            self.keypoint_model.resize_tensor_input(input_details[0]['index'], input_tensor.shape, strict=False)
+            self.keypoint_model.allocate_tensors()
+
+            self.keypoint_model.set_tensor(input_details[0]['index'], input_tensor)
+            self.keypoint_model.invoke()
+
+            output_details = self.keypoint_model.get_output_details()
+            result = {detail['name']: self.keypoint_model.get_tensor(detail['index']) for detail in output_details}
+
+        # print(result.keys())
 
         return result
 
-    def visualisation_image(self):
+    def visualisation_image(self, image_path):
         label_id_offset = 1
+
+        self.image = self.image_selection(image_path)
         image_np_with_detections = self.image.copy()
 
         # Use keypoints if available in detections
@@ -218,31 +265,34 @@ class ImageInference:
 
         while True:
             # Read frame from camera
-            success, image = vidObj.read()
+            success, frame_image = vidObj.read()
 
-            resized_frame = cv2.resize(image, (512, 512))
+            resized_frame = cv2.resize(frame_image, (512, 512))
+            expand_dim_image = np.expand_dims(resized_frame, 0)
 
-            input_tensor = tf.convert_to_tensor(np.expand_dims(resized_frame, 0), dtype=tf.uint8)
-            # results = self.detect_fn(input_tensor)
-            infer = self.model.signatures["serving_default"]
-            results = infer(input_tensor=input_tensor)
+            self.image = expand_dim_image
 
-            result = {key: value.numpy() for key, value in results.items()}
+            result_keypoint = self.keypoint_inference(mode="build_from_config")
 
             label_id_offset = 1
-            image_np_with_detections = image.copy()
+            image_np_with_detections = frame_image.copy()
 
             # Use keypoints if available in detections
             keypoints, keypoint_scores = None, None
-            if 'detection_keypoints' in result:
-                keypoints = result['detection_keypoints'][0]
-                keypoint_scores = result['detection_keypoint_scores'][0]
+            detection_keypoints = "StatefulPartitionedCall:4"
+            detection_keypoint_scores = "StatefulPartitionedCall:3"
+            detection_boxes = "StatefulPartitionedCall:0"
+            detection_classes = "StatefulPartitionedCall:2"
+            detection_scores = "StatefulPartitionedCall:6"
+            if "detection_keypoints" in result_keypoint:
+                keypoints = result_keypoint["detection_keypoints"][0]
+                keypoint_scores = result_keypoint["detection_keypoint_scores"][0]
 
             self.visualize_boxes_and_labels_on_image_array(
                 image_np_with_detections,
-                result['detection_boxes'][0],
-                (result['detection_classes'][0] + label_id_offset).astype(int),
-                result['detection_scores'][0],
+                result_keypoint["detection_boxes"][0],
+                (result_keypoint["detection_classes"][0] + label_id_offset).astype(int),
+                result_keypoint["detection_scores"][0],
                 category_index,
                 use_normalized_coordinates=True,
                 max_boxes_to_draw=200,
@@ -252,11 +302,24 @@ class ImageInference:
                 keypoint_scores=keypoint_scores,
                 keypoint_edges=COCO17_HUMAN_POSE_KEYPOINTS)
 
-            # Write to the video file
-            print(f"Frame {count} completed")
-            count += 1
+            self.keypoint_coordinates_per_frame = self.keypoint_coordinates_per_frame[-self.sequence_length:]
 
-            if count == 50:
+            if len(self.keypoint_coordinates_per_frame) == self.sequence_length:
+                result_action = self.action_model.predict(np.expand_dims(self.keypoint_coordinates_per_frame, axis=0), verbose=0)[0]
+                self.predictions.append(np.argmax(result_action))
+                current_action = self.actions[np.argmax(result_action)]
+                confidence = np.max(result_action)
+
+                if confidence > 0.5:
+                    print(current_action)
+
+            # Write to the video file
+            if success:
+                out.write(image_np_with_detections)
+                print(f"Frame {count} completed")
+                count += 1
+
+            if count == 150:
                 break
 
             if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -264,7 +327,6 @@ class ImageInference:
 
         out.release()
         cv2.destroyAllWindows()
-
 
     def visualize_boxes_and_labels_on_image_array(self,
             image,
@@ -441,8 +503,21 @@ class ImageInference:
         draw = ImageDraw.Draw(image)
         im_width, im_height = image.size
         keypoints = np.array(keypoints)
+
+        keypoints_with_vis = []
+        for coordinate in keypoints:
+            x_coor = coordinate[1]
+            y_coor = coordinate[0]
+            keypoints_with_vis.append([x_coor, y_coor, 1])
+
+        keypoints_with_vis = np.array(keypoints_with_vis).flatten()
+        self.keypoint_coordinates_per_frame.append(keypoints_with_vis)
+
         keypoints_x = [k[1] for k in keypoints]
         keypoints_y = [k[0] for k in keypoints]
+
+
+
         if use_normalized_coordinates:
             keypoints_x = tuple([im_width * x for x in keypoints_x])
             keypoints_y = tuple([im_height * y for y in keypoints_y])
