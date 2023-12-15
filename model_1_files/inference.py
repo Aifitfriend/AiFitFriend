@@ -20,11 +20,12 @@ import cv2
 from object_detection.utils import config_util
 from object_detection.builders import model_builder
 
-class ImageInference:
+
+class ImageInference():
     def __init__(self):
 
-        image_path = "/Users/dharrensandhi/fiftyone/coco-2017/validation/data/000000041990.jpg"
-        video_path = "/Users/dharrensandhi/Downloads/000017.mp4"
+        # image_path = "/Users/dharrensandhi/fiftyone/coco-2017/validation/data/000000041990.jpg"
+        video_path = "/Users/dharrensandhi/Downloads/WhatsApp Video 2023-12-15 at 12.03.41.mp4"
         action_model_path = "/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/AiFitFriend/model_2_files/lstm_attention_128HUs_dharren_2d_0.0001reg_100epoch_70-30-30_16batch_17kp_nopress.h5"
 
         self.STANDARD_COLORS = [
@@ -55,12 +56,26 @@ class ImageInference:
         self.box_num = 1
         self.num_detections = 0
 
+        self.curl_counter = 0
+        self.curl_counter_wrong = 0
+        self.squat_counter = 0
+        self.curl_stage = None
+        self.left_curl_stage = None
+        self.right_curl_stage = None
+        self.curl_stage_wrong = None
+        self.curl_stage_wrong_refresh = None
+        self.squat_stage = None
+        self.left_rep_complete = False
+        self.right_rep_complete = False
+        self.curl_wrong = False
+
         self.sequence_length = 30
         self.predictions = []
         self.actions = ['curl', 'squat']  # Replace with your action names
 
         self.keypoint_coordinates = {}
         self.keypoint_coordinates_per_frame = []
+        self.keypoint_coordinates_per_frame_flatten = []
 
         self.keypoint_model = self.load_keypoint_model(mode="build_from_config")
         self.action_model = self.load_action_recognition_model(action_model_path)
@@ -103,6 +118,7 @@ class ImageInference:
         action_model = load_model(model_path)
 
         return action_model
+
     def detect_fn(self, image):
         """
         Detect objects in image.
@@ -201,7 +217,6 @@ class ImageInference:
         plt.imshow(image_np_with_detections[0])
         # plt.show()
         plt.savefig("/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/model_1_scripts/output_images/inference.png")
-
 
     def visualisation_video_live(self):
         cap = cv2.VideoCapture(0)
@@ -302,16 +317,25 @@ class ImageInference:
                 keypoint_scores=keypoint_scores,
                 keypoint_edges=COCO17_HUMAN_POSE_KEYPOINTS)
 
-            self.keypoint_coordinates_per_frame = self.keypoint_coordinates_per_frame[-self.sequence_length:]
+            self.keypoint_coordinates_per_frame_flatten = self.keypoint_coordinates_per_frame_flatten[-self.sequence_length:]
 
-            if len(self.keypoint_coordinates_per_frame) == self.sequence_length:
-                result_action = self.action_model.predict(np.expand_dims(self.keypoint_coordinates_per_frame, axis=0), verbose=0)[0]
+            if len(self.keypoint_coordinates_per_frame_flatten) == self.sequence_length:
+                result_action = self.action_model.predict(np.expand_dims(self.keypoint_coordinates_per_frame_flatten, axis=0), verbose=0)[0]
                 self.predictions.append(np.argmax(result_action))
                 current_action = self.actions[np.argmax(result_action)]
                 confidence = np.max(result_action)
 
                 if confidence > 0.5:
                     print(current_action)
+                else:
+                    current_action = ''
+                    print(current_action)
+
+                # Count reps
+                try:
+                    self.count_reps(frame_image, current_action)
+                except:
+                    pass
 
             # Write to the video file
             if success:
@@ -327,6 +351,160 @@ class ImageInference:
 
         out.release()
         cv2.destroyAllWindows()
+
+    def calculate_angle(self, a, b, c):
+        """
+        Computes 2D joint angle inferred by 3 keypoints and their relative positions to one another
+
+        """
+        a = np.array(a)  # First
+        b = np.array(b)  # Mid
+        c = np.array(c)  # End
+
+        radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
+        angle = np.abs(radians * 180.0 / np.pi)
+
+        if angle > 180.0:
+            angle = 360 - angle
+
+        return angle
+
+    def is_unstable_shoulder(self, left_shoulder, left_elbow, right_shoulder, right_elbow):
+        # Define a threshold for elbow alignment
+        elbow_alignment_threshold = 10.0  # Adjust this value based on your specific criteria
+
+        # Check the angle between the shoulders and elbows
+        left_shoulder_angle = self.calculate_angle(left_shoulder, left_elbow, [left_elbow[0], left_elbow[1] - 10])
+        right_shoulder_angle = self.calculate_angle(right_shoulder, right_elbow, [right_elbow[0], right_elbow[1] - 10])
+        # left_shoulder_angle = calculate_angle(left_shoulder, left_elbow, left_hip)
+        # right_shoulder_angle = calculate_angle(right_shoulder, right_elbow, right_hip)
+
+        # If the angle exceeds the threshold, consider elbows flaring
+        return abs(left_shoulder_angle - right_shoulder_angle) > elbow_alignment_threshold
+
+    def count_reps(self, image, current_action):
+        """
+        Counts repetitions of each exercise. Global count and stage (i.e., state) variables are updated within this function.
+
+        """
+
+        incorrect_frame_path = "/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/model_1_scripts/output_images/incorrect_frame_"
+
+        if current_action == 'curl':
+            # Get coords
+            left_shoulder = self.keypoint_coordinates_per_frame[-1][5]
+            left_elbow = self.keypoint_coordinates_per_frame[-1][7]
+            left_wrist = self.keypoint_coordinates_per_frame[-1][9]
+            left_hip = self.keypoint_coordinates_per_frame[-1][11]
+
+            right_shoulder = self.keypoint_coordinates_per_frame[-1][6]
+            right_elbow = self.keypoint_coordinates_per_frame[-1][8]
+            right_wrist = self.keypoint_coordinates_per_frame[-1][10]
+            right_hip = self.keypoint_coordinates_per_frame[-1][12]
+
+            # calculate elbow angle
+            left_angle = self.calculate_angle(left_shoulder, left_elbow, left_wrist)
+            right_angle = self.calculate_angle(right_shoulder, right_elbow, right_wrist)
+
+            # Pose correction for shoulder stability
+            if self.is_unstable_shoulder(left_shoulder, left_elbow, right_shoulder, right_elbow):
+                # Provide feedback or take corrective action for flaring elbows
+                print('Your elbows are flaring!')
+                cv2.putText(image, 'Your elbows are flaring', (10, 400),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+                cv2.imwrite(incorrect_frame_path+"unstable_"+str(self.curl_counter_wrong)+".jpg", image)
+                self.curl_wrong = True
+
+            if left_angle < 30:
+                self.left_curl_stage = "up"
+
+            if right_angle < 30:
+                self.right_curl_stage = "up"
+
+            if left_angle > 140 and self.left_curl_stage == "up":
+                self.left_curl_stage = "down"
+                self.left_rep_complete = True
+
+            if right_angle > 140 and self.right_curl_stage == "up":
+                self.right_curl_stage = "down"
+                self.right_rep_complete = True
+
+            if self.left_rep_complete and self.right_rep_complete and not self.curl_wrong:
+                self.curl_counter += 1
+                self.left_rep_complete = False
+                self.right_rep_complete = False
+
+            elif self.left_rep_complete and self.right_rep_complete and self.curl_wrong:
+                self.curl_counter_wrong += 1
+                self.curl_wrong = False
+                self.left_rep_complete = False
+                self.right_rep_complete = False
+
+            # # curl counter logic
+            # if left_angle < 30 and right_angle < 30:
+            #     self.curl_stage = "up"
+            #
+            # if left_angle > 140 and right_angle > 140:
+            #     if self.curl_stage == 'up':
+            #         self.curl_stage = "down"
+            #         self.curl_counter += 1
+            #         self.curl_stage_wrong_refresh = 'up'
+            #     if self.curl_stage_wrong == 'up':
+            #         self.curl_stage_wrong = "down"
+            #         self.curl_stage_wrong_refresh = 'down'
+            #         self.curl_stage = 'down'
+            #         self.curl_counter_wrong += 1
+
+            print(f"Left Curl Stage: {self.left_curl_stage}")
+            print(f"Right Curl Stage: {self.right_curl_stage}")
+            print(f"Correct Curl Counter: {self.curl_counter}")
+            print(f"Incorrect Curl Counter: {self.curl_counter_wrong}")
+
+            self.squat_stage = None
+
+            # # Viz joint angle
+            # viz_joint_angle(image, left_angle, left_elbow)
+            # viz_joint_angle(image, right_angle, right_elbow)
+
+        elif current_action == 'squat':
+            # Get coords
+            # left side
+            left_shoulder = self.keypoint_coordinates_per_frame[-1][5]
+            left_hip = self.keypoint_coordinates_per_frame[-1][11]
+            left_knee = self.keypoint_coordinates_per_frame[-1][13]
+            left_ankle = self.keypoint_coordinates_per_frame[-1][15]
+            # right side
+            right_shoulder = self.keypoint_coordinates_per_frame[-1][6]
+            right_hip = self.keypoint_coordinates_per_frame[-1][12]
+            right_knee = self.keypoint_coordinates_per_frame[-1][14]
+            right_ankle = self.keypoint_coordinates_per_frame[-1][16]
+
+            # Calculate knee angles
+            left_knee_angle = self.calculate_angle(left_hip, left_knee, left_ankle)
+            right_knee_angle = self.calculate_angle(right_hip, right_knee, right_ankle)
+
+            # Calculate hip angles
+            left_hip_angle = self.calculate_angle(left_shoulder, left_hip, left_knee)
+            right_hip_angle = self.calculate_angle(right_shoulder, right_hip, right_knee)
+
+            # Squat counter logic
+            thr = 165
+            if (left_knee_angle < thr) and (right_knee_angle < thr) and (left_hip_angle < thr) and (
+                    right_hip_angle < thr):
+                self.squat_stage = "down"
+            if (left_knee_angle > thr) and (right_knee_angle > thr) and (left_hip_angle > thr) and (
+                    right_hip_angle > thr) and (self.squat_stage == 'down'):
+                self.squat_stage = 'up'
+                self.squat_counter += 1
+            self.curl_stage = None
+            self.curl_stage_wrong = None
+
+            # # Viz joint angles
+            # viz_joint_angle(image, left_knee_angle, left_knee)
+            # viz_joint_angle(image, left_hip_angle, left_hip)
+
+        else:
+            pass
 
     def visualize_boxes_and_labels_on_image_array(self,
             image,
@@ -510,13 +688,14 @@ class ImageInference:
             y_coor = coordinate[0]
             keypoints_with_vis.append([x_coor, y_coor, 1])
 
-        keypoints_with_vis = np.array(keypoints_with_vis).flatten()
-        self.keypoint_coordinates_per_frame.append(keypoints_with_vis)
+        keypoints_with_vis_normal = np.array(keypoints_with_vis)
+        self.keypoint_coordinates_per_frame.append(keypoints_with_vis_normal)
+
+        keypoints_with_vis_flatten = np.array(keypoints_with_vis).flatten()
+        self.keypoint_coordinates_per_frame_flatten.append(keypoints_with_vis_flatten)
 
         keypoints_x = [k[1] for k in keypoints]
         keypoints_y = [k[0] for k in keypoints]
-
-
 
         if use_normalized_coordinates:
             keypoints_x = tuple([im_width * x for x in keypoints_x])
@@ -552,12 +731,5 @@ class ImageInference:
                     edge_coordinates, fill=keypoint_edge_color, width=keypoint_edge_width)
 
 
-
 if __name__ == '__main__':
     imageInference = ImageInference()
-
-# python /Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/models/research/object_detection/exporter_main_v2.py \
-# --input_type image_tensor \
-# --pipeline_config_path "/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/pipeline_coco.config" \
-# --trained_checkpoint_dir "/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/output_models" \
-# --output_directory "/Users/dharrensandhi/PycharmProjects/model_1_keypoint_detection/saved_model"
