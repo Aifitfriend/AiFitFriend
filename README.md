@@ -28,6 +28,11 @@ The contributors of this product-based capstone project of Bangkit Academy are a
 
 ## Resources
 Our project consist of 4 branches:
+- [Master Branch](https://github.com/Aifitfriend/AiFitFriend)
+- [Machine Learning Branch](https://github.com/Aifitfriend/AiFitFriend/tree/machine_learning)
+- [Android Development Branch](https://github.com/Aifitfriend/AiFitFriend)
+- [Cloud Computing Branch](https://github.com/Aifitfriend/AiFitFriend/tree/cloud_computing)
+
 
 ## Resources
 
@@ -46,8 +51,19 @@ Our project consist of 4 branches:
     
 ## Usage
 ## Technology Used
+- Machine Learning
+  - Tensorflow
+  - Python
+- Android Development
+  - Kotlin
+  - Firebase
+- Cloud Computing
+  - Flask
+- Design
+  - Figma
+
 ## API Documentation
-For API documentation, please refer to the following link
+For API documentation, please refer to the following link: https://github.com/Aifitfriend/AiFitFriend/tree/cloud_computing
 
 ## Help Us to Get Better!
 We welcome and appreciate contributions from the community to make AiFitFriend better! Whether you're reporting a bug, discussing code improvements, submitting a fix, suggesting new features, or considering becoming a maintainer – your input is invaluable to us.
