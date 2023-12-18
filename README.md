@@ -18,7 +18,7 @@ The algorithm for counters and pose correction was made using the calculation lo
 
 # Dataset
 Model 1:
-
+The dataset containing annotations and its tfrecord form can be found [here] (https://drive.google.com/drive/folders/1ILw7ftAaVg3idu9ta9pqd3zK5tUHFk08?usp=sharing)
 Model 2:
 The dataset containing workout videos can be seen [here](https://drive.google.com/drive/folders/1Nvg6nRuQ8j4N77hJIoFZn0xIsP1NpWKP?usp=sharing)
 
