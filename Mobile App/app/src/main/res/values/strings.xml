@@ -1,0 +1,82 @@
+<resources>
+    //main
+    <string name="app_name">FitFriendApp</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="save_button">Save</string>
+
+    //get started
+    <string name="opening_name">Start Your Healthy Routine</string>
+    <string name="title_welcome_page">Welcome to FitFriendApp</string>
+
+    //register
+    <string name="title_signup_page">Complete the data below</string>
+    <string name="signup"> Register </string>
+
+    //login
+    <string name="login"> Login </string>
+    <string name="name">Name</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="logout"> Logout </string>
+
+    //hint
+    <string name="hint_register_password"> Input your password </string>
+    <string name="hint_register_email"> Input your email </string>
+    <string name="hint_register_name"> Input your name </string>
+
+    //auth
+    <string name="retry">Try Again</string>
+    <string name="password_auth">Password cannot be less than 8 characters</string>
+    <string name="camera_failed">Failed to open the camera</string>
+    <string name="email_rule">Email must not be empty</string>
+    <string name="password_rule">Password must not be empty</string>
+
+    //menu
+    <string name="menu_setting"> Settings </string>
+    <string name="menu_logout">Logout</string>
+
+    //profile
+    <string name="alissa_gmail_com_string">alissa@gmail.com</string>
+    <string name="alissa_string">Alissa</string>
+    <string name="logout_string">LOGOUT</string>
+    <string name="female_string">Female</string>
+    <string name="_50_kg_string">50 kg</string>
+    <string name="_168_cm_string">168 cm</string>
+
+    <string name="about_page">About</string>
+    <string name="desc_profile_picture">profile_picture</string>
+    <string name="desc_edit_tools">_edit</string>
+    <string name="desc_navigation_back">_navigation_back</string>
+    <string name="current_date">05 Dec 2023</string>
+
+    <string name="hint_input_email">Email</string>
+    <string name="hint_input_name">Name</string>
+    <string name="hint_input_gender">Gender</string>
+    <string name="hint_input_weight">Weight</string>
+    <string name="hint_input_height">Height</string>
+    <string name="fitfriend">FitFriend</string>
+    <string name="tagline_app">Your Workout AI Companion</string>
+
+
+    <string name="upper_body_10menit_5_kombinasi_gerakan">Upper Body ( 10Menit - 5 Kombinasi Gerakan )</string>
+    <string name="curl">Curl</string>
+    <string name="curl_repetion">10 X 2 Min</string>
+    <string name="bird_dog">Bird Dog</string>
+    <string name="overhead_press">Overhead Press</string>
+    <string name="start_workout">Start WorkOut</string>
+
+    <string-array name="data_name">
+        <item>Upper Body</item>
+        <item>Arm Exercise</item>
+        <item>Leg Exercise</item>
+    </string-array>
+
+    <integer-array name="data_photo">
+        <item>@drawable/arm</item>
+        <item>@drawable/upperbody</item>
+        <item>@drawable/leg1</item>
+    </integer-array>
+
+
+</resources>
