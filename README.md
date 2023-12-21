@@ -3,7 +3,7 @@ Ai FitFriend : Your AI Workout Companion GitHub Repositories of Bangkit Academy 
 Personal Fitness Tracker with Movement Recognition Model 
 <p align="center">
   <a href="#">
-    <img src="Image/STORYAPP2.jpg" alt="Logo" style="width: 400px; height: auto;">
+    <img src="Image/STORYAPP2.jpg" alt="Logo" style="width: 1000px; height: auto;">
   </a>
 </p>
 
