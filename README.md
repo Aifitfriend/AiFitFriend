@@ -3,7 +3,7 @@ Ai FitFriend : Your AI Workout Companion GitHub Repositories of Bangkit Academy 
 Personal Fitness Tracker with Movement Recognition Model 
 <p align="center">
   <a href="#">
-    <img src="Image/STORYAPP1.jpg" alt="Logo" style="width: 250px; height: auto;">
+    <img src="Image/cover.jpg" alt="Logo" style="width: 250px; height: auto;">
   </a>
 </p>
 
@@ -30,7 +30,7 @@ The contributors of this product-based capstone project of Bangkit Academy are a
 Our project consist of 4 branches:
 - [Master Branch](https://github.com/Aifitfriend/AiFitFriend)
 - [Machine Learning Branch](https://github.com/Aifitfriend/AiFitFriend/tree/machine_learning)
-- [Android Development Branch](https://github.com/Aifitfriend/AiFitFriend)
+- [Android Development Branch](https://github.com/Aifitfriend/AiFitFriend/tree/Mobile-Development)
 - [Cloud Computing Branch](https://github.com/Aifitfriend/AiFitFriend/tree/cloud_computing)
 
 
