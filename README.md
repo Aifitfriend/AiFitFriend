@@ -1,5 +1,5 @@
 # Ai FitFriend
-Ai FitFriend : Your AI Workout Companion GitHub Repositories of Bangkit Academy 2022 Capstone Project from team CH2-PS079.
+Ai FitFriend : Your AI Workout Companion GitHub Repositories of Bangkit Academy 2023 Capstone Project from team CH2-PS079.
 Personal Fitness Tracker with Movement Recognition Model 
 <p align="center">
   <a href="#">
