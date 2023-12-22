@@ -15,9 +15,9 @@ During application creation we implement it into two main processes, namely Desi
 # Preview Mobile Apps
 
 <p align="center">
-  <img src="app1.png" width="250" alt="Image 1">
-  <img src="app2.png" width="250" alt="Image 2">
-  <img src="app3.png" width="250" alt="Image 3">
+  <img src="Image/app1.png" width="250" alt="Image 1">
+  <img src="Image/app2.png" width="250" alt="Image 2">
+  <img src="Image/app3.png" width="250" alt="Image 3">
 </p>
 
 
