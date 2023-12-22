@@ -15,17 +15,22 @@
         android:layout_marginLeft="16dp"
         android:layout_marginBottom="0dp">
 
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="20dp"
             android:layout_marginBottom="16dp">
 
             <ImageView
                 android:id="@+id/previewImage"
-                android:layout_width="180dp"
-                android:layout_height="180dp"
+                android:layout_width="105dp"
+                android:layout_height="76dp"
                 android:layout_gravity="center_horizontal"
                 app:srcCompat="@drawable/profile_picture" />
 
@@ -50,9 +55,9 @@
                     android:id="@+id/ed_tv_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/alissa_string"
                     android:hint="@string/hint_input_name"
-                    tools:ignore="SpeakableTextPresentCheck"/>
+                    android:text="@string/alissa_string"
+                    tools:ignore="SpeakableTextPresentCheck" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -133,20 +138,20 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp">
+                android:layout_marginBottom="2dp">
 
                 <Button
                     android:id="@+id/button_cancel"
                     android:layout_width="120dp"
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
-                    android:layout_marginStart="32dp"
+                    android:layout_marginStart="37dp"
                     android:layout_marginTop="16dp"
                     android:backgroundTint="@color/bg_button_logout"
                     android:text="@string/cancel_button"
-                    android:textSize="16sp"
                     android:textColor="@color/white"
-                    android:textStyle="bold"/>
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <Button
                     android:id="@+id/button_save"
@@ -154,16 +159,19 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_marginTop="16dp"
-                    android:layout_marginEnd="32dp"
+                    android:layout_marginEnd="33dp"
                     android:backgroundTint="@color/bg_button_save"
                     android:text="@string/save_button"
-                    android:textSize="16sp"
                     android:textColor="@color/white"
-                    android:textStyle="bold"/>
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
             </RelativeLayout>
 
         </LinearLayout>
+
+        </ScrollView>
+
 
     </androidx.cardview.widget.CardView>
 

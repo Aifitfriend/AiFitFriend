@@ -105,6 +105,7 @@ class MainActivity : AppCompatActivity() {
         binding.cardViewProfile.visibility = View.VISIBLE
         binding.cardViewWorkout.visibility = View.VISIBLE
         binding.tvUsername.text = user.token
+
         displayCurrentDate()
     }
     private fun displayCurrentDate() {
